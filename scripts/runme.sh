@@ -16,8 +16,8 @@ export IGG_ROCMAWARE_MPI=1
 
 export ROCR_VISIBLE_DEVICES=1,2
 
-julia --project
-# julia --project diffusion_2D.jl
+# julia --project
+julia --project diffusion_2D.jl
 
 # Status `/scratch/lraess/dev/test_IGG/Project.toml`
 # [21141c5a] AMDGPU v0.3.4 `https://github.com/JuliaGPU/AMDGPU.jl.git#ee8f4b6`
