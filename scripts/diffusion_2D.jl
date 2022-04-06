@@ -42,7 +42,7 @@ using AMDGPU, ImplicitGlobalGrid, Plots
     end
     T_nh .= Array(T[2:end-1,2:end-1])
     gather!(T_nh, T_v)
-    if (me==0) heatmap(transpose(T_v), aspect_ratio=1); save("../output/Temp_$nprocs.png"); end
+    if (me==0) heatmap(transpose(T_v), aspect_ratio=1); png("../output/Temp_$nprocs.png"); end
     finalize_global_grid()                                                     # Finalize the implicit global grid
 end
 
