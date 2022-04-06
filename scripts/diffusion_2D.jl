@@ -1,4 +1,4 @@
-using AMDGPU, ImplicitGlobalGrid
+using AMDGPU, ImplicitGlobalGrid, Plots
 
 @views d_xa(A) = A[2:end  , :     ] .- A[1:end-1, :     ]
 @views d_xi(A) = A[2:end  ,2:end-1] .- A[1:end-1,2:end-1]
@@ -26,6 +26,12 @@ using AMDGPU, ImplicitGlobalGrid
     T       = zeros(Float64, nx, ny)
     # Initial conditions
     T       = ROCArray([exp(-(x_g(ix,dx,T)+dx/2 -lx/2)^2 -(y_g(iy,dy,T)+dy/2 -ly/2)^2) for ix=1:size(T,1), iy=1:size(T,2)])
+    # visu
+    gr(); ENV["GKSwstype"]="nul"; !ispath("../output") && mkdir("../output")
+    nx_v = (nx-2)*dims[1]
+    ny_v = (ny-2)*dims[2]
+    T_v  = zeros(nx_v, ny_v)
+    T_nh = zeros(nx-2, ny-2)
     # Time loop
     for it = 1:nt
         qx    .= -lam .* d_xi(T)./dx                                           # Fourier's law of heat conduction: q_x   = -λ ∂T/∂x
@@ -34,7 +40,9 @@ using AMDGPU, ImplicitGlobalGrid
         T[2:end-1,2:end-1] .= inn(T) .+ dt .* dTdt                             # Update of temperature             T_new = T_old + ∂T/∂t
         update_halo!(T)                                                        # Update the halo of T
     end
-    @show T, me
+    T_nh .= Array(T[2:end-1,2:end-1])
+    gather!(T_nh, T_v)
+    if (me==0) heatmap(transpose(T_v), aspect_ratio=1); save("../output/Temp_$nprocs.png"); end
     finalize_global_grid()                                                     # Finalize the implicit global grid
 end
 
