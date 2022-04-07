@@ -84,18 +84,18 @@ end
     T_v  = zeros(nx_v, ny_v)
     T_nh = zeros(nx-2, ny-2)
     # Time loop
-    me==0 && print("Start of time loop...")
+    me==0 && print("Starting the time loop 🚀...")
     for it = 1:nt
         wait( @roc groupsize=blocs gridsize=gridsz Flux!(qx, qy, T, lam, _dx, _dy) )
-        wait( @roc groupsize=blocs gridsize=gridsz Residual!(dTdt, qx, qy, Cp, _dx, _dy) )                            # ...                               q_y   = -λ ∂T/∂y
+        wait( @roc groupsize=blocs gridsize=gridsz Residual!(dTdt, qx, qy, Cp, _dx, _dy) )
         wait( @roc groupsize=blocs gridsize=gridsz Update!(T, dt, dTdt) )
-        update_halo!(T)                                                        # Update the halo of T
+        update_halo!(T)
     end
-    me==0 && println("End of time loop")
+    me==0 && println("done")
     T_nh .= Array(T[2:end-1,2:end-1])
     gather!(T_nh, T_v)
     if (me==0) heatmap(transpose(T_v)); png("../output/Temp_$(nprocs)_$(nx_g())_$(ny_g()).png"); end
-    finalize_global_grid()                                                     # Finalize the implicit global grid
+    finalize_global_grid()  # Finalize the implicit global grid
 end
 
 diffusion2D()
