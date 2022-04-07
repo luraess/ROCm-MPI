@@ -14,7 +14,7 @@ export UCX_WARN_UNUSED_ENV_VARS=n
 export JULIA_MPI_BINARY=system
 export IGG_ROCMAWARE_MPI=1
 
-export ROCR_VISIBLE_DEVICES=1,2
+# export ROCR_VISIBLE_DEVICES=1,2
 
 # julia --project
 julia --project diffusion_2D.jl

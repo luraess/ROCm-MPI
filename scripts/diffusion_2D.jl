@@ -12,8 +12,8 @@ using AMDGPU, ImplicitGlobalGrid, Plots
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    nx, ny  = 8, 16                                    # Number of gridpoints dimensions x, y and z
-    nt      = 1e1                                       # Number of time steps
+    nx, ny  = 127, 127                                    # Number of gridpoints dimensions x, y and z
+    nt      = 1e3                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
     println("Process $me selecting device $(AMDGPU.device())")
     dx, dy  = lx/nx_g(), ly/ny_g()                      # Space step in dimension x
@@ -42,7 +42,7 @@ using AMDGPU, ImplicitGlobalGrid, Plots
     end
     T_nh .= Array(T[2:end-1,2:end-1])
     gather!(T_nh, T_v)
-    if (me==0) heatmap(transpose(T_v), aspect_ratio=1); png("../output/Temp_$nprocs.png"); end
+    if (me==0) heatmap(transpose(T_v)); png("../output/Temp_$(nprocs)_$(nx_g())_$(ny_g()).png"); end
     finalize_global_grid()                                                     # Finalize the implicit global grid
 end
 
