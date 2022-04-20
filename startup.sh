@@ -2,6 +2,8 @@
 
 source ./scripts/setenv.sh
 
+touch Project.toml
+
 julia --project -e 'using Pkg; pkg"add https://github.com/luraess/MPI.jl#lr/rocmaware-dev";'
 
 julia --project -e 'using MPI; MPI.use_system_binary()'
