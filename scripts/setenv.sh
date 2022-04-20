@@ -14,5 +14,6 @@ export IGG_ROCMAWARE_MPI=1
 
 # Standard MPI
 # module load openmpi
+# export IGG_ROCMAWARE_MPI=0
 
 echo "ENV setup done"
