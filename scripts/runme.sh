@@ -17,7 +17,7 @@ export IGG_ROCMAWARE_MPI=1
 # export ROCR_VISIBLE_DEVICES=1,2
 
 # julia --project
-julia --project diffusion_2D.jl
+julia --project -O3 --check-bounds=no diffusion_2D.jl
 
 # AMDGPU
 # https://github.com/luraess/ImplicitGlobalGrid.jl#mpi-dev
