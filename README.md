@@ -12,9 +12,9 @@ ROCm (-aware) MPI tests
 ### Getting started
 Upon cloning the ROCm-MPI repo:
 1. `cd ROCm-MPI`
-2. `srun -n 1 --mpi=pmix --pty ./startup.sh`
+2. `srun -n 1 --mpi=pmix ./startup.sh`
 3. `cd scripts`
-4. `srun -n 4 --mpi=pmix --pty ./runme.sh`
+4. `srun -n 4 --mpi=pmix ./runme.sh`
 5. check the image saved in `/output`
 
 #### The following package versions are currently needed to run ROCm (-aware) MPI tests successfully:

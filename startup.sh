@@ -11,3 +11,5 @@ julia --project -e 'using MPI; MPI.use_system_binary()'
 julia --project -e 'using Pkg; pkg"add https://github.com/luraess/ImplicitGlobalGrid.jl#mpi-dev"; pkg"add AMDGPU";'
 
 julia --project -e 'using Pkg; pkg"add Plots"'
+
+julia --project -e 'using Pkg; Pkg.build()'
