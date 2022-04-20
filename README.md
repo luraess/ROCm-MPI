@@ -9,9 +9,15 @@ ROCm (-aware) MPI tests
 
 <img src="docs/Temp_4_252_252.png" alt="rocm-aware mpi" width="600">
 
-### Current pkg version needed (to be updated upon PRs)
+### Getting started
+Upon cloning the ROCm-MPI repo:
+1. `cd ROCm-MPI`
+2. `srun -n 1 --mpi=pmix --pty ./startup.sh`
+3. `cd scripts`
+4. `srun -n 4 --mpi=pmix --pty ./runme.sh`
+5. check the image saved in `/output`
 
-The following package versions are currently needed to run ROCm (-aware) MPI tests successfully:
-- AMDGPU: https://github.com/JuliaGPU/AMDGPU.jl/pull/220
-- MPI: https://github.com/JuliaParallel/MPI.jl/pull/547
-- ImplicitGlobalGrid: https://github.com/eth-cscs/ImplicitGlobalGrid.jl/pull/35
+#### The following package versions are currently needed to run ROCm (-aware) MPI tests successfully:
+- AMDGPU.jl v0.3.5 and above: https://github.com/JuliaGPU/AMDGPU.jl
+- MPI.jl dev: https://github.com/luraess/ImplicitGlobalGrid.jl#mpi-dev
+- ImplicitGlobalGrid.jl dev: https://github.com/luraess/MPI.jl#rocmaware-dev
