@@ -18,7 +18,7 @@ end
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    fact    = 1
+    fact    = 16
     nx, ny  = fact*1024, fact*1024                      # number of grid points
     threads = (32, 8)
     grid    = (nx, ny)
@@ -48,7 +48,7 @@ end
         if (it==11) tic() end
         wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
         T, T2 = T2, T
-        # update_halo!(T)
+        update_halo!(T)
     end
     wtime = toc()
     me==0 && println("done")
