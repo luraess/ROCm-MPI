@@ -13,6 +13,7 @@ module load roc-ompi
 export IGG_ROCMAWARE_MPI=1
 
 # Standard MPI
+# export PMIX_MCA_psec=native
 # module load openmpi
 # export IGG_ROCMAWARE_MPI=0
 
