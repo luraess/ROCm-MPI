@@ -4,8 +4,8 @@ macro d_xa(A,ix,iy)  esc(:( ($A[$ix+1,$iy+0] - $A[$ix,$iy+0]) )) end
 macro d_ya(A,ix,iy)  esc(:( ($A[$ix+0,$iy+1] - $A[$ix+0,$iy]) )) end
 macro d_xi(A,ix,iy)  esc(:( ($A[$ix+1,$iy+1] - $A[$ix,$iy+1]) )) end
 macro d_yi(A,ix,iy)  esc(:( ($A[$ix+1,$iy+1] - $A[$ix+1,$iy]) )) end
-macro inn(A,ix,iy)   esc(:( ($A[$ix+1,$iy+1]) )) end
-macro all(A,ix,iy)   esc(:( ($A[$ix  ,$iy  ]) )) end
+macro  inn(A,ix,iy)  esc(:( ($A[$ix+1,$iy+1]) )) end
+macro  all(A,ix,iy)  esc(:( ($A[$ix  ,$iy  ]) )) end
 
 """
 # Fourier's law of heat conduction:
