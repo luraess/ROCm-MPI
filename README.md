@@ -20,7 +20,7 @@ Upon cloning the ROCm-MPI repo:
 
 :warning: Make sure to modify the [`scripts/setenv.sh`](scripts/setenv.sh) script aaccordingly to the MPI and ROCm "modules" available on the machine you plan to run on.
 
-:bulb: You can use non ROCM-aware MPI by switching commenting out [`scripts/setenv.sh`](scripts/setenv.sh) L.11-17:
+:bulb: You can switch to non ROCM-aware MPI by commenting out [`scripts/setenv.sh`](scripts/setenv.sh) L.11-17:
 
 ```bash
 # ROCm-aware MPI
