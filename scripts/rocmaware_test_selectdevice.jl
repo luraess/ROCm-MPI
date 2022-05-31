@@ -4,7 +4,7 @@ MPI.Init()
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
 # select device
-comm_l = MPI.Comm_split_type(comm, MPI.Consts.MPI_COMM_TYPE_SHARED[], rank)
+comm_l = MPI.Comm_split_type(comm, MPI.COMM_TYPE_SHARED, rank)
 rank_l = MPI.Comm_rank(comm_l)
 gpu_id = AMDGPU.device!(rank_l+1)
 # select device
