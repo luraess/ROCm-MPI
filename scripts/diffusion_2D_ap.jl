@@ -12,7 +12,7 @@ using AMDGPU, ImplicitGlobalGrid, Plots
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    nx, ny  = 127, 127                                    # Number of gridpoints dimensions x, y and z
+    nx, ny  = 128, 128                                    # Number of gridpoints dimensions x, y and z
     nt      = 1e3                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
     println("Process $me selecting device $(AMDGPU.device())")
@@ -33,6 +33,7 @@ using AMDGPU, ImplicitGlobalGrid, Plots
     T_v  = zeros(nx_v, ny_v)
     T_nh = zeros(nx-2, ny-2)
     # Time loop
+    me==0 && print("Starting the time loop 🚀...")
     for it = 1:nt
         qx    .= -lam .* d_xi(T)./dx                                           # Fourier's law of heat conduction: q_x   = -λ ∂T/∂x
         qy    .= -lam .* d_yi(T)./dy                                           # ...                               q_y   = -λ ∂T/∂y
@@ -40,9 +41,10 @@ using AMDGPU, ImplicitGlobalGrid, Plots
         T[2:end-1,2:end-1] .= inn(T) .+ dt .* dTdt                             # Update of temperature             T_new = T_old + ∂T/∂t
         update_halo!(T)                                                        # Update the halo of T
     end
+    me==0 && println("done")
     T_nh .= Array(T[2:end-1,2:end-1])
     gather!(T_nh, T_v)
-    if (me==0) heatmap(transpose(T_v)); png("../output/Temp_$(nprocs)_$(nx_g())_$(ny_g()).png"); end
+    if (me==0) heatmap(transpose(T_v)); png("../output/Temp_ap_$(nprocs)_$(nx_g())_$(ny_g()).png"); end
     finalize_global_grid()                                                     # Finalize the implicit global grid
 end
 
