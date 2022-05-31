@@ -59,10 +59,9 @@ end
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    blocs   = (32, 8, 1)
-    grid    = (4, 16, 1)
-    nx, ny  = blocs[1].*grid[1], blocs[2].*grid[2] # number of grid points
-    grid    = (nx, ny, 1)
+    nx, ny  = 128, 128
+    threads = (32, 8)
+    grid    = (nx, ny)
     nt      = 1e3                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
     println("Process $me selecting device $(AMDGPU.device())")
@@ -86,9 +85,9 @@ end
     # Time loop
     me==0 && print("Starting the time loop 🚀...")
     for it = 1:nt
-        wait( @roc groupsize=blocs gridsize=grid Flux!(qx, qy, T, lam, _dx, _dy) )
-        wait( @roc groupsize=blocs gridsize=grid Residual!(dTdt, qx, qy, Cp, _dx, _dy) )
-        wait( @roc groupsize=blocs gridsize=grid Update!(T, dt, dTdt) )
+        wait( @roc groupsize=threads gridsize=grid Flux!(qx, qy, T, lam, _dx, _dy) )
+        wait( @roc groupsize=threads gridsize=grid Residual!(dTdt, qx, qy, Cp, _dx, _dy) )
+        wait( @roc groupsize=threads gridsize=grid Update!(T, dt, dTdt) )
         update_halo!(T)
     end
     me==0 && println("done")
