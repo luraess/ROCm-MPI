@@ -94,17 +94,11 @@ end
         # (3) comm/comp overlap - not ready yet
         # for istep=1:2
         #     signals[istep] = @roc groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
-        #     update_halo!(T2)
         # end
-
-        # # wait(signals[1])
-        # # update_halo!(T2)
-
-        # for istep = 1:2
-        #     wait(signals[istep])
-        # end
+        # wait(signals[1])
+        # update_halo!(T2)
+        # wait(signals[2])
         # T, T2 = T2, T
-
     end
     wtime = toc()
     me==0 && println("done")
