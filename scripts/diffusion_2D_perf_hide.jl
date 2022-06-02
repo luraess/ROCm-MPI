@@ -39,7 +39,7 @@ end
     # nx, ny  = 64, 64                      # number of grid points
     threads = (32, 8)
     grid    = (nx, ny)
-    b_width = (32, 8)
+    b_width = (32, 4)
     nt      = 1e2                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
     println("Process $me selecting device $(AMDGPU.device()) - $(get_default_agent())")
