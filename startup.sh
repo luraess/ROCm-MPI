@@ -6,7 +6,7 @@ touch Project.toml
 
 julia --project -e 'using Pkg; pkg"add https://github.com/JuliaParallel/MPI.jl#master";'
 
-julia --project -e 'using Pkg; Pkg"add MPIPreferences";'
+julia --project -e 'using Pkg; pkg"add MPIPreferences";'
 
 julia --project -e 'using MPIPreferences; MPIPreferences.use_system_binary()'
 
