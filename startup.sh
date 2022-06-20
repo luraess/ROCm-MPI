@@ -4,7 +4,7 @@ source ./scripts/setenv.sh
 
 touch Project.toml
 
-julia --project -e 'using Pkg; pkg"add https://github.com/luraess/MPI.jl#lr/rocmaware-dev";'
+julia --project -e 'using Pkg; pkg"add https://github.com/JuliaParallel/MPI.jl#master";'
 
 julia --project -e 'using Pkg; Pkg"add MPIPreferences";'
 
