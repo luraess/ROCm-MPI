@@ -27,7 +27,7 @@ using AMDGPU, ImplicitGlobalGrid, Plots
     # Initial conditions
     T       = ROCArray([exp(-(x_g(ix,dx,T)+dx/2 -lx/2)^2 -(y_g(iy,dy,T)+dy/2 -ly/2)^2) for ix=1:size(T,1), iy=1:size(T,2)])
     # visu
-    gr(); ENV["GKSwstype"]="nul"; !ispath("../output") && mkdir("../output")
+    if (me==0) gr(); ENV["GKSwstype"]="nul"; !ispath("../output") && mkdir("../output"); end
     nx_v = (nx-2)*dims[1]
     ny_v = (ny-2)*dims[2]
     T_v  = zeros(nx_v, ny_v)

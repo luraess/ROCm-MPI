@@ -36,7 +36,7 @@ end
     T2      = copy(T)
     # visu
     if do_vis
-        gr(); ENV["GKSwstype"]="nul"; !ispath("../output") && mkdir("../output")
+        if (me==0) gr(); ENV["GKSwstype"]="nul"; !ispath("../output") && mkdir("../output"); end
         nx_v = (nx-2)*dims[1]
         ny_v = (ny-2)*dims[2]
         T_v  = zeros(nx_v, ny_v)
