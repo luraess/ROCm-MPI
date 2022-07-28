@@ -18,7 +18,7 @@ end
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    fact    = 16
+    fact    = 12
     nx, ny  = fact*1024, fact*1024                      # number of grid points
     threads = (32, 8)
     grid    = (nx, ny)
