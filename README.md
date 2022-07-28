@@ -18,7 +18,7 @@ Upon cloning the ROCm-MPI repo:
 4. `srun -n 4 --mpi=pmix ./runme.sh`
 5. check the image saved in `/output`
 
-:warning: Make sure to modify the [`scripts/setenv.sh`](scripts/setenv.sh) script aaccordingly to the MPI and ROCm "modules" available on the machine you plan to run on.
+:warning: Make sure to modify the [`scripts/setenv.sh`](scripts/setenv.sh) script accordingly to the MPI and ROCm "modules" available on the machine you plan to run on.
 
 :bulb: You can switch to non ROCM-aware MPI by commenting out [`scripts/setenv.sh`](scripts/setenv.sh) L.11-17:
 
