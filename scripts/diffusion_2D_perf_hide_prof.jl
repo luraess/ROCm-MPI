@@ -2,8 +2,8 @@ using AMDGPU, ImplicitGlobalGrid, Plots, Printf
 using Profile
 
 function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy)
-    ix = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
-    iy = (workgroupIdx().y - 1) * workgroupDim().y + workitemIdx().y
+    ix = (AMDGPU.Device.workgroupIdx().x - 1) * AMDGPU.Device.workgroupDim().x + AMDGPU.Device.workitemIdx().x
+    iy = (AMDGPU.Device.workgroupIdx().y - 1) * AMDGPU.Device.workgroupDim().y + AMDGPU.Device.workitemIdx().y
     nx, ny = size(T2)
     if (ix>1 && ix<nx && iy>1 && iy<ny)
         @inbounds T2[ix,iy] = T[ix,iy] + dt*(Cp[ix,iy]*(
@@ -14,8 +14,8 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy)
 end
 
 function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
-    ix = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
-    iy = (workgroupIdx().y - 1) * workgroupDim().y + workitemIdx().y
+    ix = (AMDGPU.Device.workgroupIdx().x - 1) * AMDGPU.Device.workgroupDim().x + AMDGPU.Device.workitemIdx().x
+    iy = (AMDGPU.Device.workgroupIdx().y - 1) * AMDGPU.Device.workgroupDim().y + AMDGPU.Device.workitemIdx().y
     nx, ny = size(T2)
     # CommOverlap
     if ( istep==1 && ( ix> b_width[1] && ix< nx-b_width[1] && iy> b_width[2] && iy< ny-b_width[2] ) ); @goto early_exit end
@@ -31,21 +31,22 @@ end
 
 function compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,grid2,b_width,nt,me)
     me==0 && print("Starting the time loop 🚀...")
-    Profile.@profile for it = 1:nt
+    # Profile.@profile for it = 1:nt
+    for it = 1:nt
         if (it==11) tic() end
         # (1) original
-        # wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
-        # T, T2 = T2, T
+        wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
+        T, T2 = T2, T
         # update_halo!(T)
 
         # (2) new split kernel
-        for istep=1:2
-            signals[istep] = @roc groupsize=threads gridsize=grid2[istep] queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
-        end
-        for istep = 1:2
-            wait(signals[istep])
-        end
-        T, T2 = T2, T
+        # for istep=1:2
+        #     signals[istep] = @roc groupsize=threads gridsize=grid2[istep] queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        # end
+        # for istep = 1:2
+        #     wait(signals[istep])
+        # end
+        # T, T2 = T2, T
         # update_halo!(T)
 
         # (3) comm/comp overlap - not ready yet
@@ -68,7 +69,7 @@ end
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    fact    = 8
+    fact    = 12
     nx, ny  = fact*1024, fact*1024                      # number of grid points
     # nx, ny  = 64, 64                      # number of grid points
     threads = (32, 4)
@@ -76,7 +77,7 @@ end
     b_width = (32, 8)
     nt      = 3e2                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
-    println("Process $me selecting device $(AMDGPU.device()) - $(get_default_agent())")
+    println("Process $me selecting device $(AMDGPU.AMDGPU.default_device_id())")
     dx, dy  = lx/nx_g(), ly/ny_g()                      # Space step in dimension x
     _dx,_dy = 1.0/dx, 1.0/dy
     dt      = min(dx*dx,dy*dy)*Cp0/lam/4.1              # Time step for the 3D Heat diffusion
@@ -94,13 +95,13 @@ end
         T_v  = zeros(nx_v, ny_v)
         T_nh = zeros(nx-2, ny-2)
     end
-    qs = Vector{AMDGPU.HSAQueue}(undef,2)
+    qs = Vector{AMDGPU.ROCQueue}(undef,2)
     for istep = 1:2
-        qs[istep] = AMDGPU.HSAQueue(get_default_agent())
+        qs[istep] = AMDGPU.default_queue()
         priority = istep == 1 ? AMDGPU.HSA.AMD_QUEUE_PRIORITY_HIGH : AMDGPU.HSA.AMD_QUEUE_PRIORITY_LOW
         AMDGPU.HSA.amd_queue_set_priority(qs[istep].queue,priority)
     end
-    signals = Vector{AMDGPU.RuntimeEvent{AMDGPU.HSAStatusSignal}}(undef,2)
+    signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)
 
     grid2 = ((2 .* b_width), (grid .- 2 .* b_width))
     
@@ -109,16 +110,16 @@ end
     # Time loop
     compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,grid2,b_width,12,me) # warmup
 
-    Profile.clear()
+    # Profile.clear()
 
     wtime = compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,grid2,b_width,nt,me)
     
     # Profile.print(C=true, maxdepth=30)
     # Profile.print(maxdepth=30)
 
-    me==0 && open("./prof.txt", "w") do s
-        Profile.print(IOContext(s, :displaysize => (10000, 10000)); maxdepth=30)
-    end
+    # me==0 && open("./prof.txt", "w") do s
+    #     Profile.print(IOContext(s, :displaysize => (10000, 10000)); maxdepth=30)
+    # end
 
     GC.enable(true) # uncomment for prof, mtp
 
