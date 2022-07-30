@@ -2,8 +2,8 @@ using AMDGPU, ImplicitGlobalGrid, Plots, Printf
 using Profile
 
 function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy)
-    ix = (AMDGPU.Device.workgroupIdx().x - 1) * AMDGPU.Device.workgroupDim().x + AMDGPU.Device.workitemIdx().x
-    iy = (AMDGPU.Device.workgroupIdx().y - 1) * AMDGPU.Device.workgroupDim().y + AMDGPU.Device.workitemIdx().y
+    ix = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
+    iy = (workgroupIdx().y - 1) * workgroupDim().y + workitemIdx().y
     nx, ny = size(T2)
     if (ix>1 && ix<nx && iy>1 && iy<ny)
         @inbounds T2[ix,iy] = T[ix,iy] + dt*(Cp[ix,iy]*(
@@ -14,8 +14,8 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy)
 end
 
 function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
-    ix = (AMDGPU.Device.workgroupIdx().x - 1) * AMDGPU.Device.workgroupDim().x + AMDGPU.Device.workitemIdx().x
-    iy = (AMDGPU.Device.workgroupIdx().y - 1) * AMDGPU.Device.workgroupDim().y + AMDGPU.Device.workitemIdx().y
+    ix = (workgroupIdx().x - 1) * workgroupDim().x + workitemIdx().x
+    iy = (workgroupIdx().y - 1) * workgroupDim().y + workitemIdx().y
     nx, ny = size(T2)
     # CommOverlap
     if ( istep==1 && ( ix> b_width[1] && ix< nx-b_width[1] && iy> b_width[2] && iy< ny-b_width[2] ) ); @goto early_exit end
@@ -35,18 +35,18 @@ function compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,grid2,b_wid
     for it = 1:nt
         if (it==11) tic() end
         # (1) original
-        wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
-        T, T2 = T2, T
+        # wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
+        # T, T2 = T2, T
         # update_halo!(T)
 
         # (2) new split kernel
-        # for istep=1:2
-        #     signals[istep] = @roc groupsize=threads gridsize=grid2[istep] queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
-        # end
-        # for istep = 1:2
-        #     wait(signals[istep])
-        # end
-        # T, T2 = T2, T
+        for istep=1:2
+            signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid2[istep] queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        end
+        for istep = 1:2
+            wait(signals[istep])
+        end
+        T, T2 = T2, T
         # update_halo!(T)
 
         # (3) comm/comp overlap - not ready yet
@@ -77,7 +77,7 @@ end
     b_width = (32, 8)
     nt      = 3e2                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
-    println("Process $me selecting device $(AMDGPU.AMDGPU.default_device_id())")
+    println("Process $me selecting device $(AMDGPU.default_device_id())")
     dx, dy  = lx/nx_g(), ly/ny_g()                      # Space step in dimension x
     _dx,_dy = 1.0/dx, 1.0/dy
     dt      = min(dx*dx,dy*dy)*Cp0/lam/4.1              # Time step for the 3D Heat diffusion
@@ -97,9 +97,10 @@ end
     end
     qs = Vector{AMDGPU.ROCQueue}(undef,2)
     for istep = 1:2
-        qs[istep] = AMDGPU.default_queue()
-        priority = istep == 1 ? AMDGPU.HSA.AMD_QUEUE_PRIORITY_HIGH : AMDGPU.HSA.AMD_QUEUE_PRIORITY_LOW
-        AMDGPU.HSA.amd_queue_set_priority(qs[istep].queue,priority)
+        # qs[istep] = AMDGPU.default_queue()
+        # priority = istep == 1 ? AMDGPU.HSA.AMD_QUEUE_PRIORITY_HIGH : AMDGPU.HSA.AMD_QUEUE_PRIORITY_LOW
+        # AMDGPU.HSA.amd_queue_set_priority(qs[istep].queue,priority)
+        qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device(); priority=:low)
     end
     signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)
 
