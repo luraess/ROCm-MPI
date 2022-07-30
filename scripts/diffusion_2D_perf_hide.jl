@@ -62,9 +62,6 @@ end
     end
     qs = Vector{AMDGPU.ROCQueue}(undef,2)
     for istep = 1:2
-        # qs[istep] = AMDGPU.default_queue()
-        # priority = istep == 1 ? AMDGPU.HSA.AMD_QUEUE_PRIORITY_HIGH : AMDGPU.HSA.AMD_QUEUE_PRIORITY_LOW
-        # AMDGPU.HSA.amd_queue_set_priority(qs[istep].queue,priority)
         qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device(); priority=:low)
     end
     signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)

@@ -51,7 +51,7 @@ function compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,grid2,b_wid
 
         # (3) comm/comp overlap - not ready yet
         # for istep=1:2
-        #     signals[istep] = @roc groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        #     signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
         # end
         # wait(signals[1])
         # update_halo!(T2)
@@ -74,7 +74,7 @@ end
     # nx, ny  = 64, 64                      # number of grid points
     threads = (32, 4)
     grid    = (nx, ny)
-    b_width = (32, 8)
+    b_width = (128, 64)
     nt      = 3e2                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
     println("Process $me selecting device $(AMDGPU.default_device_id())")
@@ -97,9 +97,6 @@ end
     end
     qs = Vector{AMDGPU.ROCQueue}(undef,2)
     for istep = 1:2
-        # qs[istep] = AMDGPU.default_queue()
-        # priority = istep == 1 ? AMDGPU.HSA.AMD_QUEUE_PRIORITY_HIGH : AMDGPU.HSA.AMD_QUEUE_PRIORITY_LOW
-        # AMDGPU.HSA.amd_queue_set_priority(qs[istep].queue,priority)
         qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device(); priority=:low)
     end
     signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)
