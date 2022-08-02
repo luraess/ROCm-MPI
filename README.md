@@ -36,6 +36,6 @@ export IGG_ROCMAWARE_MPI=1
 
 ## Dependences (dev)
 The following package versions are currently needed to run ROCm (-aware) MPI tests successfully (see also in [`startup.sh`](startup.sh)):
-- AMDGPU.jl v0.3.5 and above: https://github.com/JuliaGPU/AMDGPU.jl
+- AMDGPU.jl v0.4.1 and above: https://github.com/JuliaGPU/AMDGPU.jl
 - MPI.jl `#master`: https://github.com/JuliaParallel/MPI.jl#master
-- ImplicitGlobalGrid.jl dev: https://github.com/luraess/ImplicitGlobalGrid.jl#mpi-dev
+- ImplicitGlobalGrid.jl dev: https://github.com/luraess/ImplicitGlobalGrid.jl#amdgpu-0.4.0-compat
