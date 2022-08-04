@@ -24,7 +24,7 @@ end
     grid    = (nx, ny)
     nt      = 1e3                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
-    println("Process $me selecting device $(AMDGPU.device())")
+    println("Process $me selecting device $(AMDGPU.default_device_id())")
     dx, dy  = lx/nx_g(), ly/ny_g()                      # Space step in dimension x
     _dx,_dy = 1.0/dx, 1.0/dy
     dt      = min(dx*dx,dy*dy)*Cp0/lam/4.1              # Time step for the 3D Heat diffusion
