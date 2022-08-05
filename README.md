@@ -1,20 +1,21 @@
 # ROCm-MPI
-ROCm (-aware) MPI tests on AMD GPUs
+ROCm (-aware) MPI tests on AMD GPUs on following platforms:
+- [Ault test system (MI50)](#cscs-ault)
+- [LUMI-G supercomputer (MI250x)](#lumi-g)
 
 ## Multi AMD-GPU results
 #### 1000 diffusion steps on 4 MI50 GPUs (CSCS' `Ault`)
 
 <img src="docs/Temp_4_252_252.png" alt="rocm-aware mpi" width="500">
 
-#### 1000 diffusion steps on 4 MI250x GPUs
+#### 1000 diffusion steps on 4 MI250x GPUs (LUMI-G eap)
 
 <img src="docs/Temp_ap_4_254_254_lumi.png" alt="rocm and mpi" width="500">
 
 ## Getting started
 
 ### CSCS Ault
-1. `salloc -n 4 -p amdvega -w ault20 --gres=gpu:4 -A c23 --time=04:00:00`
-Then, upon cloning the ROCm-MPI repo:
+1. First `salloc -n 4 -p amdvega -w ault20 --gres=gpu:4 -A c23 --time=04:00:00`. Then, upon cloning the ROCm-MPI repo:
 2. `cd ROCm-MPI`
 3. `srun -n 1 --mpi=pmix ./startup_ault.sh`
 4. `cd scripts`
@@ -35,8 +36,7 @@ export IGG_ROCMAWARE_MPI=1
 ```
 
 ### LUMI-G
-1. `salloc -n 4 --gpus=4 -p eap -A project_465000139 --time=04:00:00`
-Then, upon cloning the ROCm-MPI repo:
+1. First `salloc -n 4 --gpus=4 -p eap -A project_465000139 --time=04:00:00`. Then, upon cloning the ROCm-MPI repo:
 2. `cd ROCm-MPI`
 3. `srun -n 1 ./startup_lumi.sh`
 4. `cd scripts`
