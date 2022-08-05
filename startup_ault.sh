@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./scripts/setenv.sh
+source ./scripts/setenv_ault.sh
 
 touch Project.toml
 

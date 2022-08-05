@@ -1,6 +1,8 @@
 #!/bin/bash
 
-source ./setenv.sh
+# select platform
+source ./setenv_ault.sh
+# source ./setenv_lumi.sh
 
 julia --project -O3 --check-bounds=no diffusion_2D_ap.jl
 
