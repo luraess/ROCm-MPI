@@ -36,7 +36,7 @@ export IGG_ROCMAWARE_MPI=1
 ```
 
 ### LUMI-G
-1. First `salloc -n 4 --gpus=4 -p eap -A project_465000139 --time=04:00:00`. Then, upon cloning the ROCm-MPI repo:
+1. First `salloc -n 4 --gpus=4 -p eap -A project_465000139 --time=01:00:00`. Then, upon cloning the ROCm-MPI repo:
 2. `cd ROCm-MPI`
 3. `srun -n 1 ./startup_lumi.sh`
 4. `cd scripts`
@@ -50,6 +50,8 @@ export IGG_ROCMAWARE_MPI=1
 export MPICH_GPU_SUPPORT_ENABLED=1
 export IGG_ROCMAWARE_MPI=1
 ```
+
+:warning: For now the ROCm-aware support on LUMI-G is not working.
 
 ## Misc
 
