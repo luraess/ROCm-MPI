@@ -51,7 +51,6 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 export IGG_ROCMAWARE_MPI=1
 ```
 
-:warning: For now the ROCm-aware support on LUMI-G is not working.
 
 ## Misc
 
