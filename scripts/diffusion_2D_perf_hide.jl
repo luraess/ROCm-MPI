@@ -34,12 +34,11 @@ end
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    fact    = 12
+    fact    = 32
     nx, ny  = fact*1024, fact*1024                      # number of grid points
-    # nx, ny  = 64, 64                      # number of grid points
-    threads = (32, 8)
+    threads = (32, 4)
     grid    = (nx, ny)
-    b_width = (32, 4)
+    b_width = (64, 4)
     nt      = 1e2                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
     println("Process $me selecting device $(AMDGPU.default_device_id())")
@@ -50,7 +49,8 @@ end
     Cp      = Cp0.*AMDGPU.ones(Float64, nx, ny)
     T       =            zeros(Float64, nx, ny)
     # Initial conditions
-    T       = ROCArray([exp(-(x_g(ix,dx,T)+dx/2 -lx/2)^2 -(y_g(iy,dy,T)+dy/2 -ly/2)^2) for ix=1:size(T,1), iy=1:size(T,2)])
+    # T       = ROCArray([exp(-(x_g(ix,dx,T)+dx/2 -lx/2)^2 -(y_g(iy,dy,T)+dy/2 -ly/2)^2) for ix=1:size(T,1), iy=1:size(T,2)])
+    T       = ROCArray(rand(Float64, nx, ny))
     T2      = copy(T)
     # visu
     if do_vis
@@ -62,36 +62,33 @@ end
     end
     qs = Vector{AMDGPU.ROCQueue}(undef,2)
     for istep = 1:2
-        qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device(); priority=:low)
+        qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device())
     end
     signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)
 
-    grid2 = ((2 .* b_width), (grid .- 2 .* b_width))
-    
     GC.enable(false) # uncomment for prof, mtp
-
     # Time loop
     me==0 && print("Starting the time loop 🚀...")
     for it = 1:nt
         if (it==11) tic() end
         # (1) original
-        # wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
-        # T, T2 = T2, T
-        # update_halo!(T)
+        wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
+        # update_halo!(T2)
+        T, T2 = T2, T
 
         # (2) new split kernel
-        for istep=1:2
-            signals[istep] = @roc groupsize=threads gridsize=grid2[istep] queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
-        end
-        for istep = 1:2
-            wait(signals[istep])
-        end
-        T, T2 = T2, T
-        # update_halo!(T)
-
-        # (3) comm/comp overlap - not ready yet
         # for istep=1:2
-        #     signals[istep] = @roc groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        #     signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        # end
+        # for istep = 1:2
+        #     wait(signals[istep])
+        # end
+        # update_halo!(T2)
+        # T, T2 = T2, T
+
+        # (3) comm/comp overlap
+        # for istep=1:2
+        #     signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
         # end
         # wait(signals[1])
         # update_halo!(T2)
@@ -100,10 +97,9 @@ end
     end
     wtime = toc()
     me==0 && println("done")
-    
     GC.enable(true) # uncomment for prof, mtp
-
-    A_eff    = (2 + 1)/1e9*nx*ny*sizeof(Float64)  # Effective main memory access per iteration [GB] (Lower bound of required memory access: Te has to be read and written: 2 whole-array memaccess; Ci has to be read: : 1 whole-array memaccess)
+    # Postprocess
+    A_eff    = (2 + 1)/2^30*nx*ny*sizeof(Float64)  # Effective main memory access per iteration [GB] (Lower bound of required memory access: Te has to be read and written: 2 whole-array memaccess; Ci has to be read: : 1 whole-array memaccess)
     wtime_it = wtime/(nt-10)                      # Execution time per iteration [s]
     T_eff    = A_eff/wtime_it                     # Effective memory throughput [GB/s]
     me==0 && @printf("Executed %d steps in = %1.3e sec (@ T_eff = %1.2f GB/s) \n", nt, wtime, round(T_eff, sigdigits=3))

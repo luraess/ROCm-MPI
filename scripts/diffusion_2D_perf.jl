@@ -47,8 +47,8 @@ end
     for it = 1:nt
         if (it==11) tic() end
         wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
+        update_halo!(T2)
         T, T2 = T2, T
-        update_halo!(T)
     end
     wtime = toc()
     me==0 && println("done")
