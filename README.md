@@ -4,13 +4,10 @@ ROCm (-aware) MPI tests on AMD GPUs on following platforms:
 - [LUMI-G supercomputer (MI250x)](#lumi-g)
 
 ## Multi AMD-GPU results
-#### 1000 diffusion steps on 4 MI50 GPUs (CSCS' `Ault`)
-
-<img src="docs/Temp_4_252_252.png" alt="rocm-aware mpi" width="500">
-
-#### 1000 diffusion steps on 4 MI250x GPUs (LUMI-G eap)
 
 <img src="docs/Temp_ap_4_254_254_lumi.png" alt="rocm and mpi" width="500">
+
+**1000 diffusion steps on 4 MI250x GPUs (LUMI-G eap)**
 
 ## Getting started
 
@@ -35,7 +32,7 @@ export IGG_ROCMAWARE_MPI=1
 # export IGG_ROCMAWARE_MPI=0
 ```
 
-### LUMI-G
+### CSC LUMI-G
 1. Download and install Julia v1.8 on scratch, make sure to set `export JULIA_DEPOT_PATH` to point to a location on scratch
 2. First `salloc -n 4 --gpus=4 -p eap -A project_XX --time=01:00:00`. Then, upon cloning the ROCm-MPI repo:
 3. `cd ROCm-MPI`
