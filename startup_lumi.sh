@@ -14,4 +14,4 @@ julia --project -e 'using Pkg; pkg"add https://github.com/luraess/ImplicitGlobal
 
 julia --project -e 'using Pkg; pkg"add Plots";'
 
-julia --project -e 'using Pkg; Pkg.build()'
+julia --project -e 'using Pkg; Pkg.build()' # on LUMI, building AMDGPU needs to be done on a compute node but compute nodes don't have internet access

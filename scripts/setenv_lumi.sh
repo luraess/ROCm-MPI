@@ -1,9 +1,9 @@
 #!/bin/bash
 
 module load CrayEnv
-module load PrgEnv-cray
-module load rocm
 module load craype-accel-amd-gfx90a # MI250x
+module load cray-mpich
+module load rocm
 
 export JULIA_AMDGPU_DISABLE_ARTIFACTS=1
 
