@@ -34,7 +34,7 @@ end
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    fact    = 32
+    fact    = 26
     nx, ny  = fact*1024, fact*1024                      # number of grid points
     threads = (32, 4)
     grid    = (nx, ny)
@@ -72,9 +72,9 @@ end
     for it = 1:nt
         if (it==11) tic() end
         # (1) original
-        wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
+        # wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
         # update_halo!(T2)
-        T, T2 = T2, T
+        # T, T2 = T2, T
 
         # (2) new split kernel
         # for istep=1:2
@@ -87,13 +87,13 @@ end
         # T, T2 = T2, T
 
         # (3) comm/comp overlap
-        # for istep=1:2
-        #     signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
-        # end
-        # wait(signals[1])
-        # update_halo!(T2)
-        # wait(signals[2])
-        # T, T2 = T2, T
+        for istep=1:2
+            signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        end
+        wait(signals[1])
+        update_halo!(T2)
+        wait(signals[2])
+        T, T2 = T2, T
     end
     wtime = toc()
     me==0 && println("done")
