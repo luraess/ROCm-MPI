@@ -2,6 +2,7 @@
 ROCm (-aware) MPI tests on AMD GPUs on following platforms:
 - [Ault test system (MI50)](#cscs-ault)
 - [LUMI-G supercomputer (MI250x)](#lumi-g)
+- [Crusher Crusher - Frontier's test bed (MI250x)](#crusher)
 
 ## Multi AMD-GPU results
 
@@ -10,6 +11,8 @@ ROCm (-aware) MPI tests on AMD GPUs on following platforms:
 **1000 diffusion steps on 4 MI250x GPUs (LUMI-G eap)**
 
 ## Getting started
+
+On al machines, download and install Julia v1.8 on scratch, make sure to set `export JULIA_DEPOT_PATH` to point to a location on scratch.
 
 ### CSCS Ault
 1. First `salloc -n 4 -p amdvega -w ault20 --gres=gpu:4 -A cXX --time=04:00:00`. Then, upon cloning the ROCm-MPI repo:
@@ -33,18 +36,33 @@ export IGG_ROCMAWARE_MPI=1
 ```
 
 ### CSC LUMI-G
-1. Download and install Julia v1.8 on scratch, make sure to set `export JULIA_DEPOT_PATH` to point to a location on scratch
-2. First `salloc -n 4 --gpus=4 -p eap -A project_XX --time=01:00:00`. Then, upon cloning the ROCm-MPI repo:
-3. `cd ROCm-MPI`
-4. `srun -n 1 ./startup_lumi.sh` _(note that compute nodes have no internet connexion but AMDGPU and MPI need to be built on a compute node...)_
-5. `cd scripts`
-6. `srun -n 4 ./runme.sh` making sure to include the `setenv_lumi.sh` in there
-7. check the image saved in `/output`
+1. First `salloc -n 4 --gpus=4 -p eap -A project_XX --time=01:00:00`. Then, upon cloning the ROCm-MPI repo:
+2. `cd ROCm-MPI`
+3. `srun -n 1 ./startup_lumi.sh` _(note that compute nodes have no internet connexion but AMDGPU and MPI need to be built on a compute node...)_
+4. `cd scripts`
+5. `srun -n 4 ./runme.sh` making sure to include the `setenv_lumi.sh` in there
+6. check the image saved in `/output`
 
 :bulb: You can switch to non ROCM-aware MPI by setting ENV vars to 0 in [`scripts/setenv_lumi.sh`](scripts/setenv_lumi.sh) L.11-12:
 
 ```
 # ROCm-aware MPI set to 1, else 0
+export MPICH_GPU_SUPPORT_ENABLED=1
+export IGG_ROCMAWARE_MPI=1
+```
+
+
+### OLCF Crusher
+1. First allocate some GPU resources. Then, upon cloning the ROCm-MPI repo:
+2. `cd ROCm-MPI`
+3. `srun -n 1 ./startup_crusher.sh`
+4. `cd scripts`
+5. `srun -n 4 ./runme.sh` making sure to include the `setenv_crusher.sh` in there
+6. check the image saved in `/output`
+
+:bulb: You can switch to non ROCM-aware MPI by setting ENV vars to 0 in [`scripts/setenv_crusher.sh`](scripts/setenv_crusher.sh) L.12 & 16:
+
+```
 export MPICH_GPU_SUPPORT_ENABLED=1
 export IGG_ROCMAWARE_MPI=1
 ```
