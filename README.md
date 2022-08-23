@@ -1,8 +1,8 @@
 # ROCm-MPI
 ROCm (-aware) MPI tests on AMD GPUs on following platforms:
 - [Ault test system (MI50)](#cscs-ault)
-- [LUMI-G supercomputer (MI250x)](#lumi-g)
-- [Crusher - Frontier's test bed (MI250x)](#crusher)
+- [LUMI-G supercomputer (MI250x)](#csc-lumi-g)
+- [Crusher - Frontier's test bed (MI250x)](#olcf-crusher)
 
 ## Multi AMD-GPU results
 
