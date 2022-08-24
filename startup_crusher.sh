@@ -11,7 +11,7 @@ julia --project -e 'using Pkg; pkg"add MPIPreferences";'
 # libmpi_cray might be recognized automatically
 julia --project -e 'using MPIPreferences; MPIPreferences.use_system_binary(; library_names=["libmpi_cray"], mpiexec="srun")'
 
-julia --project -e 'using Pkg; pkg"add https://github.com/luraess/ImplicitGlobalGrid.jl#lr/amdgpu-0.4.0-compat"; pkg"add AMDGPU";'
+julia --project -e 'using Pkg; pkg"add https://github.com/luraess/ImplicitGlobalGrid.jl#lr/amdgpu-0.4.x-support"; pkg"add AMDGPU";'
 
 julia --project -e 'using Pkg; pkg"add Plots";'
 
