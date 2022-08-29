@@ -29,19 +29,24 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
     return
 end
 
-function compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,b_width,nt,me)
+function compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_width,nt,me)
     me==0 && print("Starting the time loop 🚀...")
     # Profile.@profile for it = 1:nt
     for it = 1:nt
         if (it==11) tic() end
+        for istep = 1:2
+            AMDGPU.HSA.signal_store_screlease(sig_real[istep].signal[], 1)
+        end
         # (1) original
-        wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
+        # signals[1] = @roc signal=sig_real[1] wait=false mark=false groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy)
+        # wait(signals[1])
+        # wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
         # update_halo!(T2)
-        T, T2 = T2, T
+        # T, T2 = T2, T
 
         # (2) new split kernel
         # for istep=1:2
-        #     signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        #     signals[istep] = @roc signal=sig_real[istep] wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
         # end
         # for istep = 1:2
         #     wait(signals[istep])
@@ -50,13 +55,13 @@ function compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,b_width,nt,
         # T, T2 = T2, T
 
         # (3) comm/comp overlap - not ready yet
-        # for istep=1:2
-        #     signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
-        # end
-        # wait(signals[1])
-        # update_halo!(T2)
-        # wait(signals[2])
-        # T, T2 = T2, T
+        for istep=1:2
+            signals[istep] = @roc signal=sig_real[istep] wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        end
+        wait(signals[1])
+        update_halo!(T2)
+        wait(signals[2])
+        T, T2 = T2, T
     end
     wtime = toc()
     me==0 && println("done")
@@ -69,12 +74,14 @@ end
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    fact    = 32
+    fact    = 28
     nx, ny  = fact*1024, fact*1024                      # number of grid points
+    # nx, ny  = 64, 64
     threads = (32, 4)
     grid    = (nx, ny)
     b_width = (64, 4)
-    nt      = 1e2                                       # Number of time steps
+    # b_width = (8, 4)
+    nt      = 1e3                                       # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
     println("Process $me selecting device $(AMDGPU.default_device_id())")
     dx, dy  = lx/nx_g(), ly/ny_g()                      # Space step in dimension x
@@ -100,15 +107,16 @@ end
         qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device())
     end
     signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)
+    sig_real = [ROCSignal(), ROCSignal()]
 
     GC.enable(false) # uncomment for prof, mtp
 
     # Time loop
-    compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,b_width,12,me) # warmup
+    compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_width,12,me) # warmup
 
     # Profile.clear()
 
-    wtime = compute_step(T2,T,Cp,lam,dt,_dx,_dy,signals,qs,threads,grid,b_width,nt,me)
+    wtime = compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_width,nt,me)
 
     # Profile.print(C=true, maxdepth=30)
     # Profile.print(maxdepth=30)

@@ -34,7 +34,7 @@ end
     lam     = 1.0                                       # Thermal conductivity
     Cp0     = 1.0
     # Numerics
-    fact    = 26
+    fact    = 28
     nx, ny  = fact*1024, fact*1024                      # number of grid points
     threads = (32, 4)
     grid    = (nx, ny)
@@ -65,12 +65,18 @@ end
         qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device())
     end
     signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)
+    sig_real = [ROCSignal(), ROCSignal()]
 
     GC.enable(false) # uncomment for prof, mtp
+
     # Time loop
     me==0 && print("Starting the time loop 🚀...")
     for it = 1:nt
         if (it==11) tic() end
+        for istep = 1:2
+            AMDGPU.HSA.signal_store_screlease(sig_real[istep].signal[], 1)
+        end
+
         # (1) original
         # wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
         # update_halo!(T2)
@@ -78,7 +84,7 @@ end
 
         # (2) new split kernel
         # for istep=1:2
-        #     signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        #     signals[istep] = @roc signal=sig_real[istep] wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
         # end
         # for istep = 1:2
         #     wait(signals[istep])
@@ -88,7 +94,7 @@ end
 
         # (3) comm/comp overlap
         for istep=1:2
-            signals[istep] = @roc wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+            signals[istep] = @roc signal=sig_real[istep] wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
         end
         wait(signals[1])
         update_halo!(T2)
@@ -97,11 +103,12 @@ end
     end
     wtime = toc()
     me==0 && println("done")
+
     GC.enable(true) # uncomment for prof, mtp
-    # Postprocess
+
     A_eff    = (2 + 1)/2^30*nx*ny*sizeof(Float64)  # Effective main memory access per iteration [GB] (Lower bound of required memory access: Te has to be read and written: 2 whole-array memaccess; Ci has to be read: : 1 whole-array memaccess)
-    wtime_it = wtime/(nt-10)                      # Execution time per iteration [s]
-    T_eff    = A_eff/wtime_it                     # Effective memory throughput [GB/s]
+    wtime_it = wtime/(nt-10)                       # Execution time per iteration [s]
+    T_eff    = A_eff/wtime_it                      # Effective memory throughput [GB/s]
     me==0 && @printf("Executed %d steps in = %1.3e sec (@ T_eff = %1.2f GB/s) \n", nt, wtime, round(T_eff, sigdigits=3))
     if do_vis
         T_nh .= Array(T[2:end-1,2:end-1])

@@ -4,11 +4,15 @@ ROCm (-aware) MPI tests on AMD GPUs on following platforms:
 - [LUMI-G supercomputer (MI250x)](#csc-lumi-g)
 - [Crusher - Frontier's test bed (MI250x)](#olcf-crusher)
 
-## Multi AMD-GPU results
+## Multi AMD-GPU results (on LUMI-G eap)
 
+### 1000 diffusion steps on 4 MI250x GPUs
 <img src="docs/Temp_ap_4_254_254_lumi.png" alt="rocm and mpi" width="500">
 
-**1000 diffusion steps on 4 MI250x GPUs (LUMI-G eap)**
+### Featuring communication/computation overlap to achieve cloae to ideal multi-GPU weak scaling
+<img src="docs/hide_comm_diff3D_8gpus.png" alt="rocm and mpi" width="500">
+
+The red-square highlights the asynchronous thus overlapping behaviour of the MPI point-to-point communication kernels and the physics computations (bottom trace). Early results achieve 97% of parallel efficiency among 16 MI250x GPUs on 2 LUMI-G eap nodes.
 
 ## Getting started
 
@@ -74,6 +78,14 @@ export IGG_ROCMAWARE_MPI=1
 
 :warning: Make sure to modify the `scripts/setenv_[...].sh` script accordingly to the MPI and ROCm "modules" available on the machine you plan to run on.
 
+### Profiling
+The profiling timeline can be generated upon running one of the `diffusion_{2,3}D_perf_hidecomm_prof.jl` scripts as:
+
+```
+rocprof --hsa-trace julia --project -O3 --check-bounds=no diffusion_{2,3}D_perf_hidecomm_prof.jl
+```
+
+> Note that because of a `LD_PRELOAD` conflict, a custom version of `rocprof` needs to be currently used on LUMI-G eap.
 
 ## Dependences (dev)
 The following package versions are currently needed to run ROCm (-aware) MPI tests successfully (see also in [`startup.sh`](startup.sh)):
