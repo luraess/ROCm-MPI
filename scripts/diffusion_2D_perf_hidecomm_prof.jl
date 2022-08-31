@@ -6,15 +6,11 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy)
     iy = (workgroupIdx().y - 1) * workgroupDim().y + workitemIdx().y
     nx, ny = size(T2)
     if (ix > 1 && ix < nx && iy > 1 && iy < ny)
-        @inbounds T2[ix, iy] = T[ix, iy] +
-                               dt * (Cp[ix, iy] *
-                                (-((-lam * (T[ix + 1, iy] - T[ix, iy]) * _dx) -
-                                   (-lam * (T[ix, iy] - T[ix - 1, iy]) * _dx)) *
-                                 _dx
-                                 -
-                                 ((-lam * (T[ix, iy + 1] - T[ix, iy]) * _dy) -
-                                  (-lam * (T[ix, iy] - T[ix, iy - 1]) * _dy)) *
-                                 _dy))
+        #! format:off
+        @inbounds T2[ix,iy] = T[ix,iy] + dt*(Cp[ix,iy]*(
+                              - ((-lam*(T[ix+1,iy] - T[ix,iy])*_dx) - (-lam*(T[ix,iy] - T[ix-1,iy])*_dx))*_dx
+                              - ((-lam*(T[ix,iy+1] - T[ix,iy])*_dy) - (-lam*(T[ix,iy] - T[ix,iy-1])*_dy))*_dy ))
+        #! format:on
     end
     return
 end
@@ -35,15 +31,11 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
         @goto early_exit
     end
     if (ix > 1 && ix < nx && iy > 1 && iy < ny)
-        @inbounds T2[ix, iy] = T[ix, iy] +
-                               dt * (Cp[ix, iy] *
-                                (-((-lam * (T[ix + 1, iy] - T[ix, iy]) * _dx) -
-                                   (-lam * (T[ix, iy] - T[ix - 1, iy]) * _dx)) *
-                                 _dx
-                                 -
-                                 ((-lam * (T[ix, iy + 1] - T[ix, iy]) * _dy) -
-                                  (-lam * (T[ix, iy] - T[ix, iy - 1]) * _dy)) *
-                                 _dy))
+        #! format:off
+        @inbounds T2[ix,iy] = T[ix,iy] + dt*(Cp[ix,iy]*(
+                              - ((-lam*(T[ix+1,iy] - T[ix,iy])*_dx) - (-lam*(T[ix,iy] - T[ix-1,iy])*_dx))*_dx
+                              - ((-lam*(T[ix,iy+1] - T[ix,iy])*_dy) - (-lam*(T[ix,iy] - T[ix,iy-1])*_dy))*_dy ))
+        #! format:on
     end
     @label early_exit
     return

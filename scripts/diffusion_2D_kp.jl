@@ -69,19 +69,19 @@ end
 
 @views function diffusion2D()
     # Physics
-    lx, ly = 10.0, 10.0                                # Length of domain in dimensions x, y and z
+    lx, ly = 10.0, 10.0                             # Length of domain in dimensions x, y and z
     lam = 1.0                                       # Thermal conductivity
     Cp0 = 1.0
     # Numerics
     nx, ny = 128, 128
     threads = (32, 8)
     grid = (nx, ny)
-    nt = 1e3                                       # Number of time steps
+    nt = 1e3                                        # Number of time steps
     me, dims, nprocs, coords, comm_cart = init_global_grid(nx, ny, 1) # Initialize the implicit global grid
     println("Process $me selecting device $(AMDGPU.default_device_id())")
     dx, dy = lx / nx_g(), ly / ny_g()                      # Space step in dimension x
     _dx, _dy = 1.0 / dx, 1.0 / dy
-    dt = min(dx * dx, dy * dy) * Cp0 / lam / 4.1              # Time step for the 3D Heat diffusion
+    dt = min(dx * dx, dy * dy) * Cp0 / lam / 4.1           # Time step for the 3D Heat diffusion
     # Array initializations
     dTdt = AMDGPU.zeros(Float64, nx - 2, ny - 2)
     qx = AMDGPU.zeros(Float64, nx - 1, ny - 2)

@@ -6,24 +6,12 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz)
     iz = (workgroupIdx().z - 1) * workgroupDim().z + workitemIdx().z
     nx, ny, nz = size(T2)
     if (ix > 1 && ix < nx && iy > 1 && iy < ny && iz > 1 && iz < nz)
-        @inbounds T2[ix, iy, iz] = T[ix, iy, iz] +
-                                   dt * (Cp[ix, iy, iz] * (-((-lam *
-                                        (T[ix + 1, iy, iz] - T[ix, iy, iz]) *
-                                        _dx) - (-lam *
-                                        (T[ix, iy, iz] - T[ix - 1, iy, iz]) *
-                                        _dx)) * _dx
-                                     -
-                                     ((-lam *
-                                       (T[ix, iy + 1, iz] - T[ix, iy, iz]) *
-                                       _dy) - (-lam *
-                                       (T[ix, iy, iz] - T[ix, iy - 1, iz]) *
-                                       _dy)) * _dy
-                                     -
-                                     ((-lam *
-                                       (T[ix, iy, iz + 1] - T[ix, iy, iz]) *
-                                       _dz) - (-lam *
-                                       (T[ix, iy, iz] - T[ix, iy, iz - 1]) *
-                                       _dz)) * _dz))
+        #! format: off
+        @inbounds T2[ix,iy,iz] = T[ix,iy,iz] + dt*(Cp[ix,iy,iz]*(
+                               - ((-lam*(T[ix+1,iy,iz] - T[ix,iy,iz])*_dx) - (-lam*(T[ix,iy,iz] - T[ix-1,iy,iz])*_dx))*_dx
+                               - ((-lam*(T[ix,iy+1,iz] - T[ix,iy,iz])*_dy) - (-lam*(T[ix,iy,iz] - T[ix,iy-1,iz])*_dy))*_dy 
+                               - ((-lam*(T[ix,iy,iz+1] - T[ix,iy,iz])*_dz) - (-lam*(T[ix,iy,iz] - T[ix,iy,iz-1])*_dz))*_dz ))
+        #! format: on
     end
     return
 end
@@ -45,24 +33,12 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz, b_width, istep)
         @goto early_exit
     end
     if (ix > 1 && ix < nx && iy > 1 && iy < ny && iz > 1 && iz < nz)
-        @inbounds T2[ix, iy, iz] = T[ix, iy, iz] +
-                                   dt * (Cp[ix, iy, iz] * (-((-lam *
-                                        (T[ix + 1, iy, iz] - T[ix, iy, iz]) *
-                                        _dx) - (-lam *
-                                        (T[ix, iy, iz] - T[ix - 1, iy, iz]) *
-                                        _dx)) * _dx
-                                     -
-                                     ((-lam *
-                                       (T[ix, iy + 1, iz] - T[ix, iy, iz]) *
-                                       _dy) - (-lam *
-                                       (T[ix, iy, iz] - T[ix, iy - 1, iz]) *
-                                       _dy)) * _dy
-                                     -
-                                     ((-lam *
-                                       (T[ix, iy, iz + 1] - T[ix, iy, iz]) *
-                                       _dz) - (-lam *
-                                       (T[ix, iy, iz] - T[ix, iy, iz - 1]) *
-                                       _dz)) * _dz))
+        #! format: off
+        @inbounds T2[ix,iy,iz] = T[ix,iy,iz] + dt*(Cp[ix,iy,iz]*(
+                               - ((-lam*(T[ix+1,iy,iz] - T[ix,iy,iz])*_dx) - (-lam*(T[ix,iy,iz] - T[ix-1,iy,iz])*_dx))*_dx
+                               - ((-lam*(T[ix,iy+1,iz] - T[ix,iy,iz])*_dy) - (-lam*(T[ix,iy,iz] - T[ix,iy-1,iz])*_dy))*_dy 
+                               - ((-lam*(T[ix,iy,iz+1] - T[ix,iy,iz])*_dz) - (-lam*(T[ix,iy,iz] - T[ix,iy,iz-1])*_dz))*_dz ))
+        #! format: on
     end
     @label early_exit
     return
