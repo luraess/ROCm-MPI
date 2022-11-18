@@ -1,7 +1,7 @@
 # ROCm-MPI
 ROCm (-aware) MPI tests on AMD GPUs on following platforms:
-- [Ault test system (MI50)](#cscs-ault)
 - [LUMI-G supercomputer (MI250x)](#csc-lumi-g)
+- [Ault test system (MI50)](#cscs-ault)
 - [Crusher - Frontier's test bed (MI250x)](#olcf-crusher)
 
 ## Multi AMD-GPU results (on LUMI-G eap)
@@ -9,7 +9,7 @@ ROCm (-aware) MPI tests on AMD GPUs on following platforms:
 ### 1000 diffusion steps on 4 MI250x GPUs
 <img src="docs/Temp_ap_4_254_254_lumi.png" alt="rocm and mpi" width="500">
 
-### Featuring communication/computation overlap to achieve cloae to ideal multi-GPU weak scaling
+### Communication/computation overlap for ideal multi-GPU weak scaling
 <img src="docs/weak_scale_lumi.png" alt="weakscaling LUMI" width="500">
 
 Ideal weak scaling is achieved by overlapping computation with MPI communication
