@@ -93,5 +93,6 @@ rocprof --hsa-trace julia --project -O3 --check-bounds=no diffusion_{2,3}D_perf_
 ## Dependences (dev)
 The following package versions are currently needed to run ROCm (-aware) MPI tests successfully (see also in [`startup.sh`](startup.sh)):
 - AMDGPU.jl v0.4.4 on `#jps/dev`: https://github.com/JuliaGPU/AMDGPU.jl#jps/dev
+- GPUCompiler v0.16.6 on `#vc/always_inline`: https://github.com/JuliaGPU/GPUCompiler.jl#vc/always_inline
 - MPI.jl from registry: https://github.com/JuliaParallel/MPI.jl
 - ImplicitGlobalGrid.jl `#lr/amdgpu-0.4.x-support`: https://github.com/luraess/ImplicitGlobalGrid.jl#lr/amdgpu-0.4.x-support
