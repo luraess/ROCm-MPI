@@ -10,13 +10,33 @@ ROCm (-aware) MPI tests on AMD GPUs on following platforms:
 <img src="docs/Temp_ap_4_254_254_lumi.png" alt="rocm and mpi" width="500">
 
 ### Featuring communication/computation overlap to achieve cloae to ideal multi-GPU weak scaling
+<img src="docs/weak_scale_lumi.png" alt="weakscaling LUMI" width="500">
+
+Ideal weak scaling is achieved by overlapping computation with MPI communication
 <img src="docs/hide_comm_diff3D_8gpus.png" alt="rocm and mpi" width="500">
 
 The red-square highlights the asynchronous thus overlapping behaviour of the MPI point-to-point communication kernels and the physics computations (bottom trace). Early results achieve 97% of parallel efficiency among 16 MI250x GPUs on 2 LUMI-G eap nodes.
 
+
 ## Getting started
 
-On al machines, download and install Julia v1.8 on scratch, make sure to set `export JULIA_DEPOT_PATH` to point to a location on scratch.
+On all machines, download and install Julia v1.9 (nightly) on scratch, make sure to set `export JULIA_DEPOT_PATH` to point to a location on scratch.
+
+### CSC LUMI-G
+1. First `salloc -n 4 --gpus=4 -p eap -A project_XX --time=01:00:00`. Then, upon cloning the ROCm-MPI repo:
+2. `cd ROCm-MPI`
+3. `srun -n 1 ./startup_lumi.sh` _(note that compute nodes have no internet connexion but AMDGPU and MPI need to be built on a compute node...)_
+4. `cd scripts`
+5. `srun -n 4 ./runme.sh` making sure to include the `setenv_lumi.sh` in there
+6. check the image saved in `/output`
+
+:bulb: You can switch to non ROCM-aware MPI by setting ENV vars to 0 in [`scripts/setenv_lumi.sh`](scripts/setenv_lumi.sh) L.11-12:
+
+```
+# ROCm-aware MPI set to 1, else 0
+export MPICH_GPU_SUPPORT_ENABLED=1
+export IGG_ROCMAWARE_MPI=1
+```
 
 ### CSCS Ault
 1. First `salloc -n 4 -p amdvega -w ault20 --gres=gpu:4 -A cXX --time=04:00:00`. Then, upon cloning the ROCm-MPI repo:
@@ -38,23 +58,6 @@ export IGG_ROCMAWARE_MPI=1
 # module load openmpi
 # export IGG_ROCMAWARE_MPI=0
 ```
-
-### CSC LUMI-G
-1. First `salloc -n 4 --gpus=4 -p eap -A project_XX --time=01:00:00`. Then, upon cloning the ROCm-MPI repo:
-2. `cd ROCm-MPI`
-3. `srun -n 1 ./startup_lumi.sh` _(note that compute nodes have no internet connexion but AMDGPU and MPI need to be built on a compute node...)_
-4. `cd scripts`
-5. `srun -n 4 ./runme.sh` making sure to include the `setenv_lumi.sh` in there
-6. check the image saved in `/output`
-
-:bulb: You can switch to non ROCM-aware MPI by setting ENV vars to 0 in [`scripts/setenv_lumi.sh`](scripts/setenv_lumi.sh) L.11-12:
-
-```
-# ROCm-aware MPI set to 1, else 0
-export MPICH_GPU_SUPPORT_ENABLED=1
-export IGG_ROCMAWARE_MPI=1
-```
-
 
 ### OLCF Crusher
 1. First allocate some GPU resources. Then, upon cloning the ROCm-MPI repo:
@@ -89,6 +92,6 @@ rocprof --hsa-trace julia --project -O3 --check-bounds=no diffusion_{2,3}D_perf_
 
 ## Dependences (dev)
 The following package versions are currently needed to run ROCm (-aware) MPI tests successfully (see also in [`startup.sh`](startup.sh)):
-- AMDGPU.jl v0.4.1 and above: https://github.com/JuliaGPU/AMDGPU.jl
-- MPI.jl `#master`: https://github.com/JuliaParallel/MPI.jl#master
-- ImplicitGlobalGrid.jl dev: https://github.com/luraess/ImplicitGlobalGrid.jl#lr/amdgpu-0.4.x-support
+- AMDGPU.jl v0.4.4 on `#jps/dev`: https://github.com/JuliaGPU/AMDGPU.jl#jps/dev
+- MPI.jl from registry: https://github.com/JuliaParallel/MPI.jl
+- ImplicitGlobalGrid.jl `#lr/amdgpu-0.4.x-support`: https://github.com/luraess/ImplicitGlobalGrid.jl#lr/amdgpu-0.4.x-support
