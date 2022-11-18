@@ -29,7 +29,7 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
     return
 end
 
-function compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_width,nt,me)
+function compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,rocqueues,threads,grid,b_width,nt,me)
     me==0 && print("Starting the time loop 🚀...")
     # Profile.@profile for it = 1:nt
     for it = 1:nt
@@ -38,7 +38,7 @@ function compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_
             AMDGPU.HSA.signal_store_screlease(sig_real[istep].signal[], 1)
         end
         # (1) original
-        # signals[1] = @roc signal=sig_real[1] wait=false mark=false groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy)
+        # signals[1] = @roc wait=false mark=false signal=sig_real[1] groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy)
         # wait(signals[1])
         # wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy) )
         # update_halo!(T2)
@@ -46,7 +46,7 @@ function compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_
 
         # (2) new split kernel
         # for istep=1:2
-        #     signals[istep] = @roc signal=sig_real[istep] wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+        #     signals[istep] = @roc wait=false mark=false signal=sig_real[istep] queue=rocqueues[istep] groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
         # end
         # for istep = 1:2
         #     wait(signals[istep])
@@ -56,7 +56,7 @@ function compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_
 
         # (3) comm/comp overlap - not ready yet
         for istep=1:2
-            signals[istep] = @roc signal=sig_real[istep] wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
+            signals[istep] = @roc wait=false mark=false signal=sig_real[istep] queue=rocqueues[istep] groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, b_width, istep)
         end
         wait(signals[1])
         update_halo!(T2)
@@ -89,7 +89,7 @@ end
     dt      = min(dx*dx,dy*dy)*Cp0/lam/4.1              # Time step for the 3D Heat diffusion
     # Array initializations
     Cp      = Cp0.*AMDGPU.ones(Float64, nx, ny)
-    T       =            zeros(Float64, nx, ny)
+    # T       =            zeros(Float64, nx, ny)
     # Initial conditions
     # T       = ROCArray([exp(-(x_g(ix,dx,T)+dx/2 -lx/2)^2 -(y_g(iy,dy,T)+dy/2 -ly/2)^2) for ix=1:size(T,1), iy=1:size(T,2)])
     T       = ROCArray(rand(Float64, nx, ny))
@@ -102,21 +102,18 @@ end
         T_v  = zeros(nx_v, ny_v)
         T_nh = zeros(nx-2, ny-2)
     end
-    qs = Vector{AMDGPU.ROCQueue}(undef,2)
-    for istep = 1:2
-        qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device())
-    end
+
     signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)
     sig_real = [ROCSignal(), ROCSignal()]
 
-    GC.enable(false) # uncomment for prof, mtp
+    GC.gc(); GC.enable(false) # uncomment for prof, mtp
 
     # Time loop
-    compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_width,12,me) # warmup
+    compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,rocqueues,threads,grid,b_width,12,me) # warmup
 
     # Profile.clear()
 
-    wtime = compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,qs,threads,grid,b_width,nt,me)
+    wtime = compute_step(T2,T,Cp,lam,dt,_dx,_dy,sig_real,signals,rocqueues,threads,grid,b_width,nt,me)
 
     # Profile.print(C=true, maxdepth=30)
     # Profile.print(maxdepth=30)
@@ -134,7 +131,6 @@ end
     if do_vis
         T_nh .= Array(T[2:end-1,2:end-1])
         gather!(T_nh, T_v)
-        (me==0) && @show maximum(T_v)
         if (me==0) heatmap(transpose(T_v)); png("../output/Temp_hide_$(nprocs)_$(nx_g())_$(ny_g()).png"); end
     end
     finalize_global_grid()  # Finalize the implicit global grid

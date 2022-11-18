@@ -32,34 +32,34 @@ function diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz, b_width, istep)
     return
 end
 
-function compute_step(T2,T,Cp,lam,dt,_dx,_dy,_dz,sig_real,signals,qs,threads,grid,b_width,nt,me)
+function compute_step(T2,T,Cp,lam,dt,_dx,_dy,_dz,sig_real,signals,rocqueues,threads,grid,b_width,nt,me)
     me==0 && print("Starting the time loop 🚀...")
     for it = 1:nt
-        if (it==11) tic() end
+        if (it==11) GC.gc(); tic() end
         for istep = 1:2
             AMDGPU.HSA.signal_store_screlease(sig_real[istep].signal[], 1)
         end
         
         # (1) original
-        # signals[1] = @roc signal=sig_real[1] wait=false mark=false groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz)
+        # signals[1] = @roc wait=false mark=false signal=sig_real[1] groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz)
         # wait(signals[1])
         # # wait( @roc groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz) )
         # update_halo!(T2)
         # T, T2 = T2, T
-        
+
         # (2) new split kernel
         # for istep=1:2
-        #     signals[istep] = @roc signal=sig_real[istep] wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz, b_width, istep)
+        #     signals[istep] = @roc wait=false mark=false signal=sig_real[istep] queue=rocqueues[istep] groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz, b_width, istep)
         # end
         # for istep = 1:2
         #     wait(signals[istep])
         # end
         # update_halo!(T2)
         # T, T2 = T2, T
-        
+
         # (3) comm/comp overlap
         for istep=1:2
-            signals[istep] = @roc signal=sig_real[istep] wait=false mark=false groupsize=threads gridsize=grid queue=qs[istep] diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz, b_width, istep)
+            signals[istep] = @roc wait=false mark=false signal=sig_real[istep] queue=rocqueues[istep] groupsize=threads gridsize=grid diffusion_step!(T2, T, Cp, lam, dt, _dx, _dy, _dz, b_width, istep)
         end
         wait(signals[1])
         update_halo!(T2)
@@ -77,8 +77,8 @@ end
     lam      = 1.0                                    # Thermal conductivity
     Cp0      = 1.0
     # Numerics
-    fact     = 6
-    nx,ny,nz = fact*128,fact*128,fact*128             # number of grid points
+    fact     = 28
+    nx,ny,nz = fact*32,fact*32,fact*32             # number of grid points
     threads  = (32,2,2)
     grid     = (nx,ny,nz)
     b_width  = (32,2,2)
@@ -90,7 +90,7 @@ end
     dt       = min(dx*dx,dy*dy,dz*dz)*Cp0/lam/6.1     # Time step for the 3D Heat diffusion
     # Array initializations
     Cp       = Cp0.*AMDGPU.ones(Float64,nx,ny,nz)
-    T        =            zeros(Float64,nx,ny,nz)
+    # T        =            zeros(Float64,nx,ny,nz)
     # Initial conditions
     # T       = ROCArray([exp(-(x_g(ix,dx,T)+dx/2 -lx/2)^2 -(y_g(iy,dy,T)+dy/2 -ly/2)^2 -(z_g(iz,dz,T)+dz/2 -lz/2)^2) for ix=1:size(T,1), iy=1:size(T,2), iz=1:size(T,3)])
     T       = ROCArray(rand(Float64,nx,ny,nz))
@@ -102,19 +102,16 @@ end
         T_v  = zeros(nx_v,ny_v,nz_v)
         T_nh = zeros(nx-2,ny-2,nz-2)
     end
-    qs = Vector{AMDGPU.ROCQueue}(undef,2)
-    for istep = 1:2
-        qs[istep] = istep == 1 ? ROCQueue(AMDGPU.default_device(); priority=:high) : ROCQueue(AMDGPU.default_device())
-    end
+
     signals = Vector{AMDGPU.ROCKernelSignal}(undef,2)
     sig_real = [ROCSignal(), ROCSignal()]
 
-    GC.enable(false) # uncomment for prof, mtp
+    GC.gc(); GC.enable(false) # uncomment for prof, mtp
 
     # Time loop
-    compute_step(T2,T,Cp,lam,dt,_dx,_dy,_dz,sig_real,signals,qs,threads,grid,b_width,12,me) # warmup
+    compute_step(T2,T,Cp,lam,dt,_dx,_dy,_dz,sig_real,signals,rocqueues,threads,grid,b_width,12,me) # warmup
     
-    wtime = compute_step(T2,T,Cp,lam,dt,_dx,_dy,_dz,sig_real,signals,qs,threads,grid,b_width,nt,me)
+    wtime = compute_step(T2,T,Cp,lam,dt,_dx,_dy,_dz,sig_real,signals,rocqueues,threads,grid,b_width,nt,me)
 
     GC.enable(true) # uncomment for prof, mtp
 
@@ -125,7 +122,6 @@ end
     if do_vis
         T_nh .= Array(T[2:end-1,2:end-1,2:end-1])
         gather!(T_nh, T_v)
-        # (me==0) && @show maximum(T_v)
         if (me==0) heatmap(transpose(view(T_v,:,:,ceil(Int,nz_v/2)))); png("../output/Temp3D_hide_$(nprocs)_$(nx_g())_$(ny_g())_$(nz_g()).png"); end
     end
     finalize_global_grid()  # Finalize the implicit global grid
